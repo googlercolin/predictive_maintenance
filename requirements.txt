@@ -5,3 +5,7 @@ numpy
 matplotlib
 seaborn
 tensorflow
+plotly
+lifelines
+lifetimes
+scikit-survival
