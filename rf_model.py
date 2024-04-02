@@ -1,12 +1,11 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier
-import xgboost as xgb
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn import tree
 import os
+from scipy.stats import randint
 
 # Create a directory to store diagrams if it doesn't exist
 diagrams_dir = 'diagrams'
@@ -30,11 +29,38 @@ y_failure = df['Machine failure']  # Target variable for predicting machine fail
 X_train, X_test, y_train, y_test = train_test_split(X, y_failure, test_size=0.2, random_state=42)
 
 # Random Forest Classifier for predicting machine failure
-rf_failure_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-rf_failure_classifier.fit(X_train, y_train)
+rf_failure_classifier = RandomForestClassifier(random_state=42)
+
+# Define the parameter distribution for randomized search
+param_dist = {
+    'n_estimators': randint(50, 200),
+    'max_depth': [None] + list(range(5, 20)),
+    'min_samples_split': randint(2, 10),
+    'min_samples_leaf': randint(1, 5)
+}
+
+# Perform randomized search with cross-validation
+randomized_search = RandomizedSearchCV(
+    estimator=rf_failure_classifier,
+    param_distributions=param_dist,
+    n_iter=50,  # Number of parameter settings to sample
+    cv=5,  # Number of cross-validation folds
+    scoring='accuracy',
+    n_jobs=-1,  # Use all available CPU cores
+    random_state=42
+)
+
+# Fit the randomized search object to the training data
+randomized_search.fit(X_train, y_train)
+
+# Get the best model and its parameters
+best_model = randomized_search.best_estimator_
+best_params = randomized_search.best_params_
+
+print("Best Parameters:", best_params)
 
 # Predictions on the test set
-rf_failure_predictions = rf_failure_classifier.predict(X_test)
+rf_failure_predictions = best_model.predict(X_test)
 
 # Accuracy for Machine Failure Classifier
 print("Accuracy for Machine Failure Classifier:", accuracy_score(y_test, rf_failure_predictions))
@@ -58,7 +84,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(diagrams_dir, f'machine_failure_confusion_matrix.png'))
 
 # Feature Importance Analysis
-feature_importance = rf_failure_classifier.feature_importances_
+feature_importance = randomized_search.best_estimator_.feature_importances_
 
 # Create a DataFrame to display feature importance
 feature_importance_df = pd.DataFrame({'Feature': X.columns, 'Importance': feature_importance})
@@ -79,16 +105,44 @@ plt.savefig(os.path.join(diagrams_dir, f'machine_failure_feature_importance.png'
 X_train_failure = X_train[y_train == 1]
 y_train_failure = df.loc[X_train_failure.index][['TWF', 'HDF', 'PWF', 'OSF', 'RNF']]  # Target variable for failure types
 
+# Random Forest Classifier for predicting failure types
+rf_failure_type_classifier = RandomForestClassifier(random_state=42)
+
+# Define the parameter distribution for randomized search
+param_dist_failure = {
+    'n_estimators': randint(50, 200),
+    'max_depth': [None] + list(range(5, 20)),
+    'min_samples_split': randint(2, 10),
+    'min_samples_leaf': randint(1, 5)
+}
+
 # Train separate classifiers for each failure type
 failure_classifiers = {}
 for failure_type in ['TWF', 'HDF', 'PWF', 'OSF', 'RNF']:
     y = y_train_failure[failure_type]
-    rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf_classifier.fit(X_train_failure, y)
-    failure_classifiers[failure_type] = rf_classifier
+
+    # Perform randomized search with cross-validation
+    randomized_search_failure = RandomizedSearchCV(
+        estimator=rf_failure_type_classifier,
+        param_distributions=param_dist_failure,
+        n_iter=50,  # Number of parameter settings to sample
+        cv=5,  # Number of cross-validation folds
+        scoring='accuracy',
+        n_jobs=-1,  # Use all available CPU cores
+        random_state=42
+    )
+
+    # Fit the randomized search object to the training data
+    randomized_search_failure.fit(X_train_failure, y)
+
+    # Get the best model and its parameters
+    best_model_failure = randomized_search_failure.best_estimator_
+    best_params_failure = randomized_search_failure.best_params_
+    print(f"Best Parameters for {failure_type}:", best_params_failure)
+    failure_classifiers[failure_type] = best_model_failure
 
     # Extract feature importance scores
-    feature_importance = rf_classifier.feature_importances_
+    feature_importance = best_model_failure.feature_importances_
 
     # Create a DataFrame to display feature importance
     feature_importance_df = pd.DataFrame({'Feature': X.columns, 'Importance': feature_importance})
