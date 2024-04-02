@@ -74,14 +74,16 @@ conf_matrix = confusion_matrix(y_test, rf_failure_predictions)
 class_labels = ['No Failure', 'Failure']
 df_cm = pd.DataFrame(conf_matrix, index=class_labels, columns=class_labels)
 plt.figure(figsize=(6, 4))
-sns.heatmap(df_cm, annot=True, cmap='Blues', fmt='g')
+sns.heatmap(df_cm, annot=True, cmap='Blues', fmt='g', annot_kws={"size": 14}   )
 plt.title('Confusion Matrix for Machine Failure Classifier')
-plt.xlabel('Predicted Labels')
-plt.ylabel('True Labels')
+plt.xlabel('Predicted Labels', fontsize=14)
+plt.ylabel('True Labels', fontsize=14)
+plt.xticks(fontsize=14)  # Increase tick label size
+plt.yticks(fontsize=14)  # Increase tick label size
 plt.tight_layout()
 
 # Save the figure
-plt.savefig(os.path.join(diagrams_dir, f'machine_failure_confusion_matrix.png'))
+plt.savefig(os.path.join(diagrams_dir, f'rf/machine_failure_confusion_matrix.png'))
 
 # Feature Importance Analysis
 feature_importance = randomized_search.best_estimator_.feature_importances_
@@ -96,10 +98,12 @@ sns.barplot(x='Importance', y='Feature', data=feature_importance_df)
 plt.title('Feature Importance for Machine Failure Prediction (Random Forest)')
 plt.xlabel('Importance')
 plt.ylabel('Feature')
+plt.xticks(fontsize=16)  # Increase tick label size
+plt.yticks(fontsize=16)  # Increase tick label size
 plt.tight_layout()
 
 # Save the figure
-plt.savefig(os.path.join(diagrams_dir, f'machine_failure_feature_importance.png'))
+plt.savefig(os.path.join(diagrams_dir, f'rf/machine_failure_feature_importance.png'))
 
 # Filter training data to include only samples where machine failure is predicted
 X_train_failure = X_train[y_train == 1]
@@ -151,13 +155,15 @@ for failure_type in ['TWF', 'HDF', 'PWF', 'OSF', 'RNF']:
     # Visualize Feature Importance
     plt.figure(figsize=(10, 6))
     sns.barplot(x='Importance', y='Feature', data=feature_importance_df)
-    plt.title(f'Feature Importance for {failure_type} Prediction (Random Forest)')
-    plt.xlabel('Importance')
-    plt.ylabel('Feature')
+    plt.title(f'Feature Importance for {failure_type} Prediction (Random Forest)', fontsize=14)
+    plt.xlabel('Importance', fontsize=14)
+    plt.ylabel('Feature', fontsize=14)
+    plt.xticks(fontsize=14)  # Increase tick label size
+    plt.yticks(fontsize=14)  # Increase tick label size
     plt.tight_layout()
 
     # Save the figure
-    plt.savefig(os.path.join(diagrams_dir, f'{failure_type}_feature_importance.png'))
+    plt.savefig(os.path.join(diagrams_dir, f'rf/{failure_type}_feature_importance.png'))
 
 
 # Evaluate the classifiers on the test set
